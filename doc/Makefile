@@ -1,105 +1,58 @@
-# Makefile for Sphinx documentation
-#
+# Makefile for Sphinx LaTeX output
 
-# You can set these variables from the command line.
-SPHINXOPTS    =
-SPHINXBUILD   = sphinx-build
-PAPER         =
+ALLDOCS = $(basename $(wildcard *.tex))
+ALLPDF = $(addsuffix .pdf,$(ALLDOCS))
+ALLDVI = $(addsuffix .dvi,$(ALLDOCS))
 
-# Internal variables.
-PAPEROPT_a4     = -D latex_paper_size=a4
-PAPEROPT_letter = -D latex_paper_size=letter
-ALLSPHINXOPTS   = -d build/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
+# Prefix for archive names
+ARCHIVEPRREFIX =
+# Additional LaTeX options
+LATEXOPTS =
 
-.PHONY: help clean html dirhtml pickle json htmlhelp qthelp latex changes linkcheck doctest
+all: $(ALLPDF)
+all-pdf: $(ALLPDF)
+all-dvi: $(ALLDVI)
+all-ps: all-dvi
+	for f in *.dvi; do dvips $$f; done
 
-help:
-	@echo "Please use \`make <target>' where <target> is one of"
-	@echo "  html      to make standalone HTML files"
-	@echo "  dirhtml   to make HTML files named index.html in directories"
-	@echo "  pickle    to make pickle files"
-	@echo "  json      to make JSON files"
-	@echo "  htmlhelp  to make HTML files and a HTML help project"
-	@echo "  qthelp    to make HTML files and a qthelp project"
-	@echo "  devhelp   to make HTML files and a Devhelp project"
-	@echo "  latex     to make LaTeX files, you can set PAPER=a4 or PAPER=letter"
-	@echo "  latexpdf  to make LaTeX files and run them through pdflatex"
-	@echo "  changes   to make an overview of all changed/added/deprecated items"
-	@echo "  linkcheck to check all external links for integrity"
-	@echo "  doctest   to run all doctests embedded in the documentation (if enabled)"
+zip: all-$(FMT)
+	mkdir $(ARCHIVEPREFIX)docs-$(FMT)
+	cp $(ALLPDF) $(ARCHIVEPREFIX)docs-$(FMT)
+	zip -q -r -9 $(ARCHIVEPREFIX)docs-$(FMT).zip $(ARCHIVEPREFIX)docs-$(FMT)
+	rm -r $(ARCHIVEPREFIX)docs-$(FMT)
+
+tar: all-$(FMT)
+	mkdir $(ARCHIVEPREFIX)docs-$(FMT)
+	cp $(ALLPDF) $(ARCHIVEPREFIX)docs-$(FMT)
+	tar cf $(ARCHIVEPREFIX)docs-$(FMT).tar $(ARCHIVEPREFIX)docs-$(FMT)
+	rm -r $(ARCHIVEPREFIX)docs-$(FMT)
+
+bz2: tar
+	bzip2 -9 -k $(ARCHIVEPREFIX)docs-$(FMT).tar
+
+# The number of LaTeX runs is quite conservative, but I don't expect it
+# to get run often, so the little extra time won't hurt.
+%.dvi: %.tex
+	latex $(LATEXOPTS) '$<'
+	latex $(LATEXOPTS) '$<'
+	latex $(LATEXOPTS) '$<'
+	-makeindex -s python.ist '$(basename $<).idx'
+	-makeindex -s python.ist '$(basename mod$<).idx'
+	latex $(LATEXOPTS) '$<'
+	latex $(LATEXOPTS) '$<'
+
+%.pdf: %.tex
+	pdflatex $(LATEXOPTS) '$<'
+	pdflatex $(LATEXOPTS) '$<'
+	pdflatex $(LATEXOPTS) '$<'
+	-makeindex -s python.ist '$(basename $<).idx'
+	-makeindex -s python.ist '$(basename mod$<).idx'
+	pdflatex $(LATEXOPTS) '$<'
+	pdflatex $(LATEXOPTS) '$<'
 
 clean:
-	-rm -rf build/*
+	rm -f *.pdf *.dvi *.ps
+	rm -f *.log *.ind *.aux *.toc *.syn *.idx *.out *.ilg *.pla
 
-html:
-	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) build/html
-	@echo
-	@echo "Build finished. The HTML pages are in build/html."
+.PHONY: all all-pdf all-dvi all-ps clean
 
-dirhtml:
-	$(SPHINXBUILD) -b dirhtml $(ALLSPHINXOPTS) build/dirhtml
-	@echo
-	@echo "Build finished. The HTML pages are in build/dirhtml."
-
-pickle:
-	$(SPHINXBUILD) -b pickle $(ALLSPHINXOPTS) build/pickle
-	@echo
-	@echo "Build finished; now you can process the pickle files."
-
-json:
-	$(SPHINXBUILD) -b json $(ALLSPHINXOPTS) build/json
-	@echo
-	@echo "Build finished; now you can process the JSON files."
-
-htmlhelp:
-	$(SPHINXBUILD) -b htmlhelp $(ALLSPHINXOPTS) build/htmlhelp
-	@echo
-	@echo "Build finished; now you can run HTML Help Workshop with the" \
-	      ".hhp project file in build/htmlhelp."
-
-qthelp:
-	$(SPHINXBUILD) -b qthelp $(ALLSPHINXOPTS) build/qthelp
-	@echo
-	@echo "Build finished; now you can run "qcollectiongenerator" with the" \
-	      ".qhcp project file in build/qthelp, like this:"
-	@echo "# qcollectiongenerator build/qthelp/scikitsimage.qhcp"
-	@echo "To view the help file:"
-	@echo "# assistant -collectionFile build/qthelp/scikitsimage.qhc"
-
-devhelp:
-	$(SPHINXBUILD) -b devhelp $(ALLSPHINXOPTS) build/devhelp
-	@echo
-	@echo "Build finished."
-	@echo "To view the help file:"
-	@echo "# mkdir -p $$HOME/.local/share/devhelp/scikitsimage"
-	@echo "# ln -s build/devhelp $$HOME/.local/share/devhelp/scikitsimage"
-	@echo "# devhelp"
-
-latex:
-	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) build/latex
-	@echo
-	@echo "Build finished; the LaTeX files are in build/latex."
-	@echo "Run \`make all-pdf' or \`make all-ps' in that directory to" \
-	      "run these through (pdf)latex."
-
-latexpdf: latex
-	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) build/latex
-	@echo "Running LaTeX files through pdflatex..."
-	make -C build/latex all-pdf
-	@echo "pdflatex finished; the PDF files are in build/latex."
-
-changes:
-	$(SPHINXBUILD) -b changes $(ALLSPHINXOPTS) build/changes
-	@echo
-	@echo "The overview file is in build/changes."
-
-linkcheck:
-	$(SPHINXBUILD) -b linkcheck $(ALLSPHINXOPTS) build/linkcheck
-	@echo
-	@echo "Link check complete; look for any errors in the above output " \
-	      "or in build/linkcheck/output.txt."
-
-doctest:
-	$(SPHINXBUILD) -b doctest $(ALLSPHINXOPTS) build/doctest
-	@echo "Testing of doctests in the sources finished, look at the " \
-	      "results in build/doctest/output.txt."

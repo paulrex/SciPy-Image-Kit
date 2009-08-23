@@ -1,0 +1,13 @@
+*******
+Filters
+*******
+
+.. automodule:: scikits.image.filter
+    :members:
+    :undoc-members:
+    :inherited-members:
+
+.. autoclass:: scikits.image.filter.LPIFilter2D
+    :members:
+    :undoc-members:
+    :inherited-members:
